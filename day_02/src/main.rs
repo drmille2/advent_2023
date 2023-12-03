@@ -49,7 +49,7 @@ impl Bag {
     fn can_game(&self, g: Game) -> bool {
         g.into_iter()
             .map(|gr| self.can_grab(gr))
-            .fold(true, |res, prev| res && prev)
+            .all(|prev| prev)
     }
 
     fn can_grab(&self, g: CubeSet) -> bool {
@@ -73,7 +73,7 @@ impl Bag {
                 }
             }
         }
-        return true;
+        true
     }
 
     fn bag_power(&self) -> usize {
@@ -137,8 +137,8 @@ fn min_bag(g: Game) -> Bag {
 
 fn parse_grab(s: &str) -> CubeSet {
     let mut out = Vec::new();
-    for cubes in s.split(",") {
-        let (count, color) = cubes.trim().split_once(" ").unwrap();
+    for cubes in s.split(',') {
+        let (count, color) = cubes.trim().split_once(' ').unwrap();
         let count_int = count.parse::<usize>().unwrap();
         if color.contains("green") {
             for _ in 0..count_int {
@@ -161,13 +161,13 @@ fn parse_input(s: &str) -> Vec<Game> {
     let mut out: Vec<Game> = Vec::new();
     for row in s.split_terminator('\n') {
         let mut game: Vec<CubeSet> = Vec::new();
-        let trimmed = row.split_once(":").unwrap().1;
-        for g in trimmed.split(";") {
+        let trimmed = row.split_once(':').unwrap().1;
+        for g in trimmed.split(';') {
             game.push(parse_grab(g));
         }
         out.push(game);
     }
-    return out;
+    out
 }
 
 fn solve_part1(s: &str) -> usize {
@@ -178,7 +178,7 @@ fn solve_part1(s: &str) -> usize {
             index_sum += index + 1;
         }
     }
-    return index_sum;
+    index_sum
 }
 
 fn solve_part2(s: &str) -> usize {
