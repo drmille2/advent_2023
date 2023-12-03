@@ -1,7 +1,5 @@
 use clap::Parser;
 use std::{collections::HashMap, fs};
-use strum::IntoEnumIterator;
-use strum_macros::EnumIter;
 
 #[derive(Parser, Debug)]
 #[command(
@@ -15,7 +13,9 @@ struct Cli {
     input: String,
 }
 
-#[derive(Debug, PartialEq, Eq, Clone, Hash, EnumIter)]
+const COLORS: [Cube; 3] = [Cube::Red, Cube::Green, Cube::Blue];
+
+#[derive(Debug, PartialEq, Eq, Clone, Hash)]
 enum Cube {
     Red,
     Green,
@@ -47,14 +47,13 @@ impl Bag {
         }
     }
     fn can_game(&self, g: Game) -> bool {
-        g.into_iter()
-            .map(|gr| self.can_grab(gr))
-            .all(|prev| prev)
+        g.into_iter().map(|gr| self.can_grab(gr)).all(|prev| prev)
     }
 
     fn can_grab(&self, g: CubeSet) -> bool {
         let colors = count_cubes(g);
-        for col in Cube::iter() {
+        // for col in Cube::iter() {
+        for col in COLORS {
             match col {
                 Cube::Red => {
                     if colors.get(&Cube::Red) > self.colors.get(&Cube::Red) {
