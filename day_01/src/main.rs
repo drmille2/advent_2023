@@ -63,7 +63,7 @@ fn get_first_digit(s: &str) -> u32 {
         }
     }
     println!("something went wrong, no first digit found");
-    return 0;
+    0
 }
 
 fn get_last_digit(s: &str) -> u32 {
@@ -79,7 +79,7 @@ fn get_last_digit(s: &str) -> u32 {
             false => n += 1,
         }
     }
-    return 0;
+    0
 }
 
 fn line_to_num(s: &str) -> u32 {
@@ -105,7 +105,7 @@ fn parse_input(s: &str) -> Vec<&str> {
 }
 
 fn solve_part1(s: &str) -> u32 {
-    parse_input(s).into_iter().map(|l| line_to_num(l)).sum()
+    parse_input(s).into_iter().map(line_to_num).sum()
 }
 
 fn solve_part2(s: &str) -> u32 {
