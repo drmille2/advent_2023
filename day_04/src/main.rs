@@ -54,8 +54,6 @@ impl Card {
         let exp: u32 = won.values().sum::<usize>() as u32;
         let mut points = 0;
         if exp != 0 {
-            // points = 0;
-            // } else {
             let base: usize = 2;
             points = base.pow(exp - 1);
         }
@@ -72,7 +70,7 @@ impl Card {
 
 fn scratch_cards(
     card_counts: &mut HashMap<usize, usize>,
-    card_lookup: HashMap<usize, Card>,
+    card_lookup: &HashMap<usize, Card>,
 ) -> usize {
     let mut cards_scratched = 0;
     for num in 1..=card_lookup.len() {
@@ -107,7 +105,7 @@ fn solve_part2(s: &str) -> usize {
         card_counts.insert(card.number, 1);
     }
 
-    scratch_cards(&mut card_counts, card_lookup)
+    scratch_cards(&mut card_counts, &card_lookup)
 }
 
 fn main() {
