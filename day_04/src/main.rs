@@ -16,7 +16,7 @@ struct Cli {
 #[derive(Debug, Clone)]
 struct Card {
     number: usize,
-    won: HashMap<usize, usize>,
+    points: usize,
     score: usize,
 }
 
@@ -51,18 +51,21 @@ impl Card {
             won.entry(*n).and_modify(|e| *e += 1);
         }
 
+        let exp: u32 = won.values().sum::<usize>() as u32;
+        let mut points = 0;
+        if exp != 0 {
+            // points = 0;
+            // } else {
+            let base: usize = 2;
+            points = base.pow(exp - 1);
+        }
+
         let score = won.clone().values().sum();
 
-        Card { number, won, score }
-    }
-
-    fn points(&self) -> usize {
-        let exp: u32 = self.won.values().sum::<usize>() as u32;
-        if exp == 0 {
-            0
-        } else {
-            let base: usize = 2;
-            base.pow(exp - 1)
+        Card {
+            number,
+            points,
+            score,
         }
     }
 }
@@ -89,7 +92,7 @@ fn solve_part1(s: &str) -> usize {
     let mut out = 0;
     for row in s.split_terminator('\n') {
         let card = Card::new(row);
-        out += card.points();
+        out += card.points;
     }
     out
 }
