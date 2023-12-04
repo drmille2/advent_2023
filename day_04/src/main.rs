@@ -15,10 +15,9 @@ struct Cli {
 
 #[derive(Debug, Clone)]
 struct Card {
-    _number: usize,
-    _winning: Vec<usize>,
-    _actual: Vec<usize>,
+    number: usize,
     won: HashMap<usize, usize>,
+    score: usize,
 }
 
 impl Card {
@@ -52,12 +51,9 @@ impl Card {
             won.entry(*n).and_modify(|e| *e += 1);
         }
 
-        Card {
-            _number: number,
-            _winning: winning,
-            _actual: actual,
-            won,
-        }
+        let score = won.clone().values().sum();
+
+        Card { number, won, score }
     }
 
     fn points(&self) -> usize {
@@ -68,10 +64,6 @@ impl Card {
             let base: usize = 2;
             base.pow(exp - 1)
         }
-    }
-
-    fn score(&self) -> usize {
-        self.won.values().sum()
     }
 }
 
@@ -84,7 +76,7 @@ fn scratch_cards(
         let card = card_lookup.get(&(num)).unwrap();
         for _ in 0..*card_counts.get(&num).unwrap_or(&0) {
             card_counts.entry(num).and_modify(|x| *x -= 1);
-            for idx in num..(num + card.score()) {
+            for idx in num..(num + card.score) {
                 card_counts.entry(idx + 1).and_modify(|x| *x += 1);
             }
             cards_scratched += 1;
@@ -108,8 +100,8 @@ fn solve_part2(s: &str) -> usize {
 
     for row in s.split_terminator('\n') {
         let card = Card::new(row);
-        card_lookup.insert(card._number, card.clone());
-        card_counts.insert(card._number, 1);
+        card_lookup.insert(card.number, card.clone());
+        card_counts.insert(card.number, 1);
     }
 
     scratch_cards(&mut card_counts, card_lookup)
