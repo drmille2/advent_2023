@@ -35,7 +35,7 @@ trait IsSymbol {
 
 impl IsSymbol for char {
     fn is_symbol(&self) -> bool {
-        self.is_ascii_digit() || *self == '.'
+        !(self.is_ascii_digit() || *self == '.')
     }
 }
 
@@ -134,7 +134,7 @@ fn solve_part1(s: &str) -> usize {
     let schem = Schematic::new(s);
     let mut out = 0;
     for (idx, part) in schem.parts.iter().enumerate() {
-        if !schem.get_adj_chars(idx).chars().all(|c| c.is_symbol()) {
+        if !schem.get_adj_chars(idx).chars().all(|c| !c.is_symbol()) {
             out += part.val;
         } else {
         }
