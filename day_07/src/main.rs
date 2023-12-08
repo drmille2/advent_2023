@@ -17,6 +17,13 @@ struct Cli {
 
 const BASE: u32 = 16;
 
+const OAK_5: u32 = 9 * BASE.pow(6);
+const OAK_4: u32 = 8 * BASE.pow(6);
+const FULLH: u32 = 7 * BASE.pow(6);
+const OAK_3: u32 = 6 * BASE.pow(6);
+const TWOPR: u32 = 5 * BASE.pow(6);
+const OAK_2: u32 = 4 * BASE.pow(6);
+
 #[derive(Debug, Eq, PartialEq, PartialOrd, Ord, Hash, Primitive)]
 enum Card {
     A = 14,
@@ -32,11 +39,12 @@ enum Card {
     Four = 4,
     Three = 3,
     Two = 2,
+    Joker = 0,
 }
 
 #[derive(Debug)]
 struct Hand {
-    cards: Vec<Card>,
+    _cards: Vec<Card>,
     bet: usize,
     value: usize,
 }
@@ -83,55 +91,94 @@ impl PartialEq for Hand {
 impl Eq for Hand {}
 
 impl Hand {
-    fn new(s: &str) -> Self {
+    fn new(s: &str, p: usize) -> Self {
         let (cards_str, bet_str) = s.split_once(' ').unwrap();
         let bet = bet_str.parse::<usize>().unwrap();
         let mut cards = Vec::new();
         for c in cards_str.chars() {
             cards.push(Card::new(c).unwrap())
         }
+        if p == 2 {
+            cards = jokerize(cards);
+        }
         let value = hand_value(&cards) as usize + sum_card_value(&cards);
-        Hand { cards, bet, value }
+        Hand {
+            _cards: cards,
+            bet,
+            value,
+        }
     }
 }
 
 fn hand_value(cards: &[Card]) -> u32 {
-    let exp: u32 = 6;
+    let counts = count_cards(cards);
+    let num_jokers = *counts.get(&Card::Joker).unwrap_or(&0);
 
-    if is_n_ofakind(cards, 5) {
-        // println!("{:?} is five of a kind", cards);
-        return 9 * BASE.pow(exp);
+    if is_n_ofakind(cards, 5) || num_jokers == 5 {
+        return OAK_5;
     }
+
     if is_n_ofakind(cards, 4) {
-        // println!("{:?} is four of a kind", cards);
-        return 8 * BASE.pow(exp);
+        if num_jokers > 0 {
+            return OAK_5;
+        } else {
+            return OAK_4;
+        }
     }
+
     if is_fullhouse(cards) {
-        // println!("{:?} is full house", cards);
-        return 7 * BASE.pow(exp);
+        return FULLH;
     }
+
     if is_n_ofakind(cards, 3) {
-        // println!("{:?} is three of a kind", cards);
-        return 6 * BASE.pow(exp);
+        match num_jokers {
+            1 => return OAK_4,
+            2 => return OAK_5,
+            _ => return OAK_3,
+        };
     }
+
     if is_twopair(cards) {
-        // println!("{:?} is two pair", cards);
-        return 5 * BASE.pow(exp);
+        if num_jokers > 0 {
+            return FULLH;
+        } else {
+            return TWOPR;
+        }
     }
+
     if is_n_ofakind(cards, 2) {
-        // println!("{:?} is two of a kind", cards);
-        return 4 * BASE.pow(exp);
+        match num_jokers {
+            1 => return OAK_3,
+            2 => return OAK_4,
+            3 => return OAK_5,
+            _ => return OAK_2,
+        };
     }
-    0
+
+    match num_jokers {
+        1 => OAK_2,
+        2 => OAK_3,
+        3 => OAK_4,
+        4 => OAK_5,
+        _ => 0,
+    }
 }
 
 fn sum_card_value(cards: &[Card]) -> usize {
     let mut out = 0;
+    let mut card_val;
     for (idx, card) in cards.iter().rev().enumerate() {
-        out += BASE.pow(idx as u32) * card.to_u32().unwrap();
+        card_val = card.to_u32().unwrap();
+        out += BASE.pow(idx as u32) * card_val;
     }
-    // println!("sum of card values {:?} = {}", cards, out);
     out as usize
+}
+
+fn jokerize(cards: Vec<Card>) -> Vec<Card> {
+    cards
+        .into_iter()
+        .map(|c| if c == Card::J { Card::Joker } else { c })
+        .collect()
 }
 
 fn count_cards(cards: &[Card]) -> HashMap<&Card, usize> {
@@ -144,40 +191,54 @@ fn count_cards(cards: &[Card]) -> HashMap<&Card, usize> {
 
 fn is_n_ofakind(cards: &[Card], n: usize) -> bool {
     let counts = count_cards(cards);
-    counts.values().filter(|c| **c == n).count() > 0
+    counts
+        .into_iter()
+        .filter(|c| c.0 != &Card::Joker)
+        .filter(|c| c.1 == n)
+        .count()
+        > 0
 }
 
 fn is_fullhouse(cards: &[Card]) -> bool {
-    let counts = count_cards(cards);
     is_n_ofakind(cards, 2) && is_n_ofakind(cards, 3)
 }
 
 fn is_twopair(cards: &[Card]) -> bool {
     let counts = count_cards(cards);
-    let out = counts.into_values().filter(|v| v == &2).count() == 2;
-    out
+    counts
+        .into_iter()
+        .filter(|c| c.0 != &Card::Joker)
+        .filter(|c| c.1 == 2)
+        .count()
+        == 2
 }
 
 fn solve_part1(s: &str) -> usize {
     let mut hands = Vec::new();
     for h in s.split_terminator('\n') {
-        hands.push(Hand::new(h))
+        hands.push(Hand::new(h, 1))
     }
     hands.sort();
 
-    println!("Hands (sorted): {:?}", hands);
-
     let mut out = 0;
     for (idx, hand) in hands.into_iter().enumerate() {
-        let hand_val = (idx + 1) * hand.bet;
-        println!("rank {} hand: {:?} winnings: {}", idx + 1, hand, hand_val);
         out += (idx + 1) * hand.bet
     }
     out
 }
 
-fn solve_part2(s: &str) -> i64 {
-    0
+fn solve_part2(s: &str) -> usize {
+    let mut hands = Vec::new();
+    for h in s.split_terminator('\n') {
+        hands.push(Hand::new(h, 2))
+    }
+    hands.sort();
+
+    let mut out = 0;
+    for (idx, hand) in hands.into_iter().enumerate() {
+        out += (idx + 1) * hand.bet
+    }
+    out
 }
 
 fn main() {
