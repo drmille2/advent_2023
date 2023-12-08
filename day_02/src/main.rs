@@ -87,17 +87,7 @@ impl Bag {
 fn count_cubes(c: CubeSet) -> HashMap<Cube, usize> {
     let mut colors = HashMap::new();
     for u in c.into_iter() {
-        match u {
-            Cube::Red => colors.entry(Cube::Red).and_modify(|t| *t += 1).or_insert(1),
-            Cube::Green => colors
-                .entry(Cube::Green)
-                .and_modify(|t| *t += 1)
-                .or_insert(1),
-            Cube::Blue => colors
-                .entry(Cube::Blue)
-                .and_modify(|t| *t += 1)
-                .or_insert(1),
-        };
+        colors.entry(u).and_modify(|e| *e += 1).or_insert(1);
     }
     colors
 }
