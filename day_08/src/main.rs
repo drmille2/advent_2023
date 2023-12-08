@@ -51,7 +51,6 @@ fn parse_input(s: &str) -> (Map, Vec<Move>) {
         if let Some((node, rem)) = line.split_once('=') {
             let node_name: Vec<char> = node.trim().chars().collect();
             let (l_str, r_str) = rem.split_once(',').unwrap();
-            // map.entry(node_name.trim()).
             map.insert(
                 node_name,
                 (
@@ -60,7 +59,6 @@ fn parse_input(s: &str) -> (Map, Vec<Move>) {
                 ),
             );
         }
-        // let (node, rem) = line.split_once('=').unwrap();
     }
 
     (map, moves)
@@ -72,7 +70,6 @@ fn solve_part1(s: &str) -> usize {
     let mut i_tot = 0;
     let mut loc: Element = vec!['A', 'A', 'A'];
     let num_moves = &moves.len();
-    // let loc = 0;
     loop {
         if &i == num_moves {
             i = 0
