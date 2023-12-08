@@ -13,7 +13,7 @@ struct Cli {
     input: String,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 struct Span {
     start: i64,
     end: i64,
@@ -21,19 +21,29 @@ struct Span {
     index: i64,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 struct ItemMap {
     spans: Vec<Span>,
 }
 
 impl Span {
-    fn new(s: &str) -> Self {
+    fn new(s: &str, rev: bool) -> Self {
         let (dst, rem) = s.split_once(' ').unwrap();
         let (src, len) = rem.split_once(' ').unwrap();
 
-        let start = src.parse::<i64>().unwrap();
-        let end = start + len.parse::<i64>().unwrap();
-        let offset = dst.parse::<i64>().unwrap() - start;
+        let start: i64;
+        let end: i64;
+        let offset: i64;
+
+        if !rev {
+            start = src.parse::<i64>().unwrap();
+            end = start + len.parse::<i64>().unwrap();
+            offset = dst.parse::<i64>().unwrap() - start;
+        } else {
+            start = dst.parse::<i64>().unwrap();
+            end = start + len.parse::<i64>().unwrap();
+            offset = src.parse::<i64>().unwrap() - start;
+        }
 
         Span {
             start,
@@ -66,11 +76,11 @@ impl Iterator for Span {
 }
 
 impl ItemMap {
-    fn new(s: &str) -> Self {
+    fn new(s: &str, rev: bool) -> Self {
         let mut spans = Vec::new();
         for row in s.split_terminator('\n') {
             if !row.contains(':') && !row.trim().is_empty() {
-                spans.push(Span::new(row))
+                spans.push(Span::new(row, rev))
             }
         }
         ItemMap { spans }
@@ -128,7 +138,21 @@ fn parse_item_map(s: &str) -> Vec<ItemMap> {
 
     for map_str in s.split("\n\n") {
         if !map_str.trim().is_empty() {
-            maps.push(ItemMap::new(map_str));
+            maps.push(ItemMap::new(map_str, false));
+        }
+    }
+
+    maps
+}
+
+fn parse_item_map_rev(s: &str) -> Vec<ItemMap> {
+    let mut maps = Vec::new();
+
+    // split in reverse order
+    for map_str in s.rsplit("\n\n") {
+        if !map_str.trim().is_empty() {
+            // build reverse spans
+            maps.push(ItemMap::new(map_str, true));
         }
     }
 
@@ -147,21 +171,25 @@ fn solve_part1(s: &str) -> i64 {
         .unwrap()
 }
 
+fn in_spans(spans: &[Span], i: i64) -> bool {
+    for span in spans {
+        if span.contains(i) {
+            return true;
+        }
+    }
+    false
+}
+
 fn solve_part2(s: &str) -> i64 {
     let (seeds_str, rem) = s.split_once('\n').unwrap();
     let seeds = parse_seeds_p2(seeds_str);
-    let maps = parse_item_map(rem);
-
-    seeds
-        .into_iter()
-        .map(|span| {
-            span.into_iter()
-                .map(|s| maps.iter().fold(s, |acc, x| x.get(acc)))
-                .min()
-                .unwrap()
-        })
-        .min()
-        .unwrap()
+    let maps = parse_item_map_rev(rem);
+    for loc in 0.. {
+        if in_spans(&seeds, maps.iter().fold(loc, |acc, x| x.get(acc))) {
+            return loc;
+        }
+    }
+    0
 }
 
 fn main() {
