@@ -24,7 +24,6 @@ fn calc_deriv(x: &VecDeque<isize>) -> Series {
 }
 
 fn rextend_series(x: &mut Series) {
-    // if x.into_iter().windows(2).all(|x| x[0] == x[1]) {
     if x.iter().all(|a| a == &x[0]) {
         x.push_back(x[0]);
         return;
@@ -36,17 +35,17 @@ fn rextend_series(x: &mut Series) {
     x.push_back(next);
 }
 
-// fn lextend_series(x: &mut Series) {
-//     if x.windows(2).all(|x| x[0] == x[1]) {
-//         x.push(x[0]);
-//         return;
-//     }
+fn lextend_series(x: &mut Series) {
+    if x.iter().all(|a| a == &x[0]) {
+        x.push_front(x[0]);
+        return;
+    }
 
-//     let mut d = calc_deriv(x);
-//     lextend_series(&mut d);
-//     let next = x.last().unwrap() + *d.last().unwrap();
-//     x.push(next);
-// }
+    let mut d = calc_deriv(x);
+    lextend_series(&mut d);
+    let prev = x[0] - d[0];
+    x.push_front(prev);
+}
 
 fn parse_input(s: &str) -> Vec<Series> {
     let mut out = Vec::new();
@@ -67,18 +66,23 @@ fn solve_part1(s: &str) -> isize {
         rextend_series(&mut series);
         out += series.into_iter().last().unwrap();
     }
-    // let mut series = all_series[2].clone();
-    // println!("series {:?}", series);
     out
 }
 
-// fn solve_part2(s: &str) -> usize {
-//     0
-// }
+fn solve_part2(s: &str) -> isize {
+    let all_series = parse_input(s);
+    let mut out = 0;
+    for mut series in all_series {
+        lextend_series(&mut series);
+        out += series[0];
+        println!("series {:?}", series);
+    }
+    out
+}
 
 fn main() {
     let cli_args = Cli::parse();
     let input = &fs::read_to_string(cli_args.input).unwrap();
     println!("Part 1: {}", solve_part1(input));
-    // println!("Part 2: {}", solve_part2(input));
+    println!("Part 2: {}", solve_part2(input));
 }
