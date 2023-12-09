@@ -75,7 +75,6 @@ fn solve_part2(s: &str) -> isize {
     for mut series in all_series {
         lextend_series(&mut series);
         out += series[0];
-        println!("series {:?}", series);
     }
     out
 }
