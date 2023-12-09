@@ -13,11 +13,11 @@ struct Cli {
     input: String,
 }
 
-type Element = Vec<char>;
-type Map = HashMap<Element, (Element, Element)>;
+type Place = Vec<char>;
+type Map = HashMap<Place, (Place, Place)>;
 
 #[derive(Debug, Copy, Clone)]
-enum Move {
+enum Dir {
     L,
     R,
 }
@@ -25,48 +25,32 @@ enum Move {
 #[derive(Debug)]
 struct Atlas {
     map: Map,
-    loc: Element,
-    locs: Vec<Element>,
+    loc: Place,
+    locs: Vec<Place>,
 }
 
-impl Atlas {
-    fn travel(&mut self, m: Move) {
-        let next = self.map.get(&self.loc).unwrap().clone();
-        // println!("travelling from {:?} in direction {:?}", self.loc, m);
-        match m {
-            Move::L => self.loc = next.0,
-            Move::R => self.loc = next.1,
-        };
-    }
-
-    fn travel_all(&mut self, m: Move) {
-        let mut locs = Vec::new();
-        let loc_copy = self.locs.clone();
-        for loc in loc_copy {
-            let next = self.map.get(&loc).unwrap().clone();
-            match m {
-                Move::L => locs.push(next.0),
-                Move::R => locs.push(next.1),
-            };
-        }
-        // println!("travelling from {:?} in direction {:?}", self.locs, m);
-        self.locs = locs;
-    }
-}
-
-impl Move {
+impl Dir {
     fn new(c: char) -> Option<Self> {
         match c {
-            'L' => Some(Move::L),
-            'R' => Some(Move::R),
+            'L' => Some(Dir::L),
+            'R' => Some(Dir::R),
             _ => None,
         }
     }
 }
 
-fn parse_input(s: &str) -> (Map, Vec<Move>) {
+fn travel(map: &Map, origin: Place, direction: Dir) -> Place {
+    let next = map.get(&origin).unwrap().clone();
+    // println!("travelling from {:?} in direction {:?}", self.loc, m);
+    match direction {
+        Dir::L => next.0,
+        Dir::R => next.1,
+    }
+}
+
+fn parse_input(s: &str) -> (Map, Vec<Dir>) {
     let (first, rem) = s.split_once('\n').unwrap();
-    let moves = first.chars().map(|c| Move::new(c).unwrap()).collect();
+    let moves = first.chars().map(|c| Dir::new(c).unwrap()).collect();
 
     let mut map = HashMap::new();
     for line in rem.split_terminator('\n') {
@@ -86,71 +70,72 @@ fn parse_input(s: &str) -> (Map, Vec<Move>) {
     (map, moves)
 }
 
-fn is_all_end(s: &[Element]) -> bool {
-    s.iter().map(|e| e.last().unwrap()).all(|c| c == &'Z')
+fn calculate_route(map: &Map, origin: Place, end: Place, route: Vec<Dir>) -> usize {
+    let num_moves = &route.len();
+    let mut i = 0;
+    let mut i_tot = 0;
+    let mut location: Place = origin;
+
+    loop {
+        if &i == num_moves {
+            i = 0
+        };
+        let direction = route[i];
+        location = travel(map, location, direction);
+        i += 1;
+        i_tot += 1;
+        if location == end {
+            println!("stopping at {:?}", location);
+            break;
+        }
+    }
+    i_tot
 }
+
+// fn is_all_end(s: &[Place]) -> bool {
+//     s.iter().map(|e| e.last().unwrap()).all(|c| c == &'Z')
+// }
 
 fn solve_part1(s: &str) -> usize {
-    let (map, moves) = parse_input(s);
-    let mut i = 0;
-    let mut i_tot = 0;
-    let mut atlas = Atlas {
-        map,
-        loc: vec!['A', 'A', 'A'],
-        locs: Vec::new(),
-    };
-    let num_moves = &moves.len();
-    loop {
-        if &i == num_moves {
-            i = 0
-        };
-        let m = moves[i];
-        atlas.travel(m);
-        i += 1;
-        i_tot += 1;
-        if atlas.loc == vec!['Z', 'Z', 'Z'] {
-            println!("stopping at {:?}", atlas.loc);
-            break;
-        }
-    }
-    i_tot
+    let (map, route) = parse_input(s);
+    calculate_route(&map, vec!['A', 'A', 'A'], vec!['Z', 'Z', 'Z'], route)
 }
 
-fn solve_part2(s: &str) -> usize {
-    let (map, moves) = parse_input(s);
-    let mut i = 0;
-    let mut i_tot = 0;
-    let map_clone = map.clone();
-    let locs: Vec<Element> = map_clone
-        .keys()
-        .filter(|t| *t.last().unwrap() == 'A')
-        .cloned()
-        .collect();
-    let mut atlas = Atlas {
-        map,
-        loc: Vec::new(),
-        locs,
-    };
-    let num_moves = &moves.len();
-    loop {
-        if &i == num_moves {
-            i = 0
-        };
-        let m = moves[i];
-        atlas.travel_all(m);
-        i += 1;
-        i_tot += 1;
-        if is_all_end(&atlas.locs) {
-            println!("stopping at {:?}", atlas.locs);
-            break;
-        }
-    }
-    i_tot
-}
+// fn solve_part2(s: &str) -> usize {
+//     let (map, moves) = parse_input(s);
+//     let mut i = 0;
+//     let mut i_tot = 0;
+//     let map_clone = map.clone();
+//     let locs: Vec<Element> = map_clone
+//         .keys()
+//         .filter(|t| *t.last().unwrap() == 'A')
+//         .cloned()
+//         .collect();
+//     let mut atlas = Atlas {
+//         map,
+//         loc: Vec::new(),
+//         locs,
+//     };
+//     let num_moves = &moves.len();
+//     loop {
+//         if &i == num_moves {
+//             i = 0
+//         };
+//         let m = moves[i];
+//         atlas.travel_all(m);
+//         i += 1;
+//         i_tot += 1;
+//         if is_all_end(&atlas.locs) {
+//             println!("stopping at {:?}", atlas.locs);
+//             break;
+//         }
+//     }
+//     i_tot
+// }
 
 fn main() {
     let cli_args = Cli::parse();
     let input = &fs::read_to_string(cli_args.input).unwrap();
     println!("Part 1: {}", solve_part1(input));
-    println!("Part 2: {}", solve_part2(input));
+    // println!("Part 2: {}", solve_part2(input));
 }
