@@ -99,7 +99,7 @@ fn fine_whatever(n: usize) -> bool {
 fn ugh(n: usize, factors: &[usize]) -> HashMap<usize, usize> {
     let mut out: HashMap<usize, usize> = HashMap::new();
     for f in factors {
-        if f == &n {
+        if f > &(n / 2) {
             break;
         }
         if n % f == 0 {
@@ -134,7 +134,7 @@ fn solve_part2(s: &str) -> usize {
     }
 
     let mut primes = Vec::new();
-    for n in 1..=50000 {
+    for n in 1..=path_lengths.iter().max().unwrap() / 2 {
         if fine_whatever(n) {
             primes.push(n);
         }
