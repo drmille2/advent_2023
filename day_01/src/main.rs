@@ -49,55 +49,46 @@ fn get_written_digit(s: &str) -> u32 {
     extract_int_from_string(&replace_num_words(s))
 }
 
-fn get_first_digit(s: &str) -> u32 {
-    let mut n = 1;
-    while n <= s.len() {
+fn get_first_digit(s: &str, incl_written: bool) -> u32 {
+    for n in 1..=s.len() {
         if let Some(num) = s.chars().nth(n - 1).unwrap().to_digit(10) {
             return num;
         }
-        match contains_num_word(&s[0..n]) {
-            true => {
-                return get_written_digit(&s[0..n]);
+        if incl_written {
+            match contains_num_word(&s[0..n]) {
+                true => {
+                    return get_written_digit(&s[0..n]);
+                }
+                false => continue,
             }
-            false => n += 1,
         }
     }
     println!("something went wrong, no first digit found");
     0
 }
 
-fn get_last_digit(s: &str) -> u32 {
-    let mut n = 1;
-    while n <= s.len() {
+fn get_last_digit(s: &str, incl_written: bool) -> u32 {
+    for n in 1..=s.len() {
         if let Some(num) = s.chars().nth(s.len() - n).unwrap().to_digit(10) {
             return num;
         }
-        match contains_num_word(&s[s.len() - n..]) {
-            true => {
-                return get_written_digit(&s[s.len() - n..]);
+        if incl_written {
+            match contains_num_word(&s[s.len() - n..]) {
+                true => {
+                    return get_written_digit(&s[s.len() - n..]);
+                }
+                false => continue,
             }
-            false => n += 1,
         }
     }
     0
 }
 
-fn line_to_num(s: &str) -> u32 {
-    let n: String = s.chars().filter(|c| c.is_numeric()).collect();
-
-    // handle lines with only 1 number correctly
-    if n.len() == 1 {
-        let m = n.parse::<u32>().unwrap();
-        return 10 * m + m;
-    }
-
-    n.chars()
-        .enumerate()
-        .filter(|c| (c.0 == 0) || (c.0 == n.len() - 1))
-        .map(|c| c.1)
-        .collect::<String>()
-        .parse::<u32>()
-        .unwrap()
+fn line_to_num(s: &str, incl_written: bool) -> u32 {
+    parse_input(s)
+        .into_iter()
+        .map(|l| 10 * get_first_digit(l, incl_written) + get_last_digit(l, incl_written))
+        .sum()
 }
 
 fn parse_input(s: &str) -> Vec<&str> {
@@ -105,13 +96,16 @@ fn parse_input(s: &str) -> Vec<&str> {
 }
 
 fn solve_part1(s: &str) -> u32 {
-    parse_input(s).into_iter().map(line_to_num).sum()
+    parse_input(s)
+        .into_iter()
+        .map(|r| line_to_num(r, false))
+        .sum()
 }
 
 fn solve_part2(s: &str) -> u32 {
     parse_input(s)
         .into_iter()
-        .map(|l| 10 * get_first_digit(l) + get_last_digit(l))
+        .map(|r| line_to_num(r, true))
         .sum()
 }
 
