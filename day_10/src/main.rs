@@ -64,6 +64,8 @@ impl fmt::Display for Pipe {
 struct Diagram {
     tiles: Vec<Vec<Pipe>>,
     start: Coord,
+    path: Vec<Coord>,
+    verts: Vec<Coord>,
 }
 
 impl Diagram {
@@ -80,7 +82,12 @@ impl Diagram {
             }
             tiles.push(row);
         }
-        Diagram { tiles, start }
+        Diagram {
+            tiles,
+            start,
+            path: Vec::new(),
+            verts: Vec::new(),
+        }
     }
 
     fn get_pipe(&self, o: &Coord) -> Option<&Pipe> {
@@ -123,7 +130,34 @@ impl Diagram {
         }
     }
 
-    fn adjacent(&self, o: &Coord) -> (Option<Coord>, Option<Coord>) {
+    // rust point-in-polygon algorithm based on the Jordan Curve Theorem
+    // adapted from C implementation found at https://wrfranklin.org/Research/Short_Notes/pnpoly.html
+    fn is_interior(&self, o: &Coord) -> bool {
+        let x = o.0 as isize;
+        let y = o.1 as isize;
+        let mut c = false;
+        let mut i = 0;
+        let mut j = self.verts.len() - 1;
+        while i < self.verts.len() {
+            let vertex_ix = self.verts[i].0 as isize;
+            let vertex_jx = self.verts[j].0 as isize;
+            let vertex_iy = self.verts[i].1 as isize;
+            let vertex_jy = self.verts[j].1 as isize;
+            if ((vertex_iy > y) != (vertex_jy > y))
+                && (x
+                    < (vertex_jx - vertex_ix) * (y - vertex_iy) / (vertex_jy - vertex_iy)
+                        + vertex_ix)
+            {
+                c = !c;
+            }
+            j = i;
+            i += 1;
+        }
+
+        c
+    }
+
+    fn get_conn_pipe_seg(&self, o: &Coord) -> (Option<Coord>, Option<Coord>) {
         let prev: Option<Coord>;
         let next: Option<Coord>;
         match self.get_pipe(o).unwrap() {
@@ -192,7 +226,7 @@ impl Diagram {
                 next = self.get_left(o);
             }
             Pipe::UpperRight => {
-                // returns bottom & left adjacencies
+                // returns bottom & left adjacencies.1
                 prev = self.get_bottom(o);
                 next = self.get_left(o);
             }
@@ -209,27 +243,43 @@ impl Diagram {
         (prev, next)
     }
 
-    fn get_path(&self, o: &Coord) -> Vec<Coord> {
+    fn get_path(&mut self, o: &Coord) {
         let origin = *o;
-        let mut out = vec![origin];
+        let mut path = vec![origin];
         let mut cur = origin;
         loop {
-            let (a, b) = self.adjacent(&cur);
+            let (a, b) = self.get_conn_pipe_seg(&cur);
 
-            if (a == Some(origin) || b == Some(origin)) && out.len() > 2 {
+            if (a == Some(origin) || b == Some(origin)) && path.len() > 2 {
                 break;
             }
 
-            if a.is_none() || out.contains(&a.unwrap()) {
-                out.push(b.unwrap());
+            if a.is_none() || path.contains(&a.unwrap()) {
+                path.push(b.unwrap());
                 cur = b.unwrap();
                 continue;
             };
 
-            out.push(a.unwrap());
+            path.push(a.unwrap());
             cur = a.unwrap();
         }
-        out
+
+        let verts: Vec<Coord> = path
+            .iter()
+            .filter(|p| {
+                matches!(
+                    self.get_pipe(p).unwrap(),
+                    &Pipe::LowerLeft
+                        | &Pipe::LowerRight
+                        | &Pipe::UpperLeft
+                        | &Pipe::UpperRight
+                        | &Pipe::Start
+                )
+            })
+            .copied()
+            .collect();
+        self.path = path;
+        self.verts = verts;
     }
 }
 
@@ -247,20 +297,35 @@ impl fmt::Display for Diagram {
 }
 
 fn solve_part1(s: &str) -> usize {
-    let diagram = Diagram::new(s);
+    let mut diagram = Diagram::new(s);
     println!("Diagram: \n{}", diagram);
     println!("Start position = {:?}", diagram.start);
-    let path = diagram.get_path(&diagram.start);
-    println!(
-        "Path length is {}, farthest point is {:?}",
-        path.len(),
-        path[path.len() / 2]
-    );
-    path.len() / 2
+    let start = diagram.start;
+    diagram.get_path(&start);
+    diagram.path.len() / 2
 }
 
-fn solve_part2(s: &str) -> isize {
-    0
+fn solve_part2(s: &str) -> usize {
+    let mut diagram = Diagram::new(s);
+    let start = diagram.start;
+    diagram.get_path(&start);
+
+    let height = diagram.tiles.len();
+    let width = diagram.tiles[0].len();
+
+    let mut interior = 0;
+    for x in 0..width {
+        for y in 0..height {
+            if diagram.path.contains(&(x, y)) {
+                continue;
+            }
+            if diagram.is_interior(&(x, y)) {
+                interior += 1;
+            }
+        }
+    }
+
+    interior
 }
 
 fn main() {
